@@ -1,7 +1,5 @@
 -- ranks country of origin of bands, ordered by number of fans
-DROP INDEX origin ON metal_bands;
-CREATE INDEX origin ON metal_bands(origin); 
-
+-- ordered by number of not unique fans
 SELECT origin, SUM(fans) AS nb_fans
 FROM metal_bands
 GROUP BY origin

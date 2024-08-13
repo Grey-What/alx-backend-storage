@@ -1,0 +1,3 @@
+// deletes all documents that match in the collection 'school'
+// databse name passed as argument to mongo
+db.school.deleteMany({name: "Holberton school"});

@@ -36,6 +36,35 @@ def count_calls(method: Callable) -> Callable:
     return caller
 
 
+def replay(fn: Callable) -> None:
+    """Displays the call history of a Cache class' method."""
+
+    if fn is None or not hasattr(fn, '__self__'):
+        return
+
+    redis_inst = getattr(fn.__self__, '_redis', None)
+    if not isinstance(redis_inst, redis.Redis):
+        return
+
+    func_name = fn.__qualname__
+    in_key = '{}:inputs'.format(func_name)
+    out_key = '{}:outputs'.format(func_name)
+    func_call_count = 0
+
+    if redis_inst.exists(func_name) != 0:
+        func_call_count = int(redis_inst.get(func_name))
+    print('{} was called {} times:'.format(func_name, func_call_count))
+
+    func_inputs = redis_inst.lrange(in_key, 0, -1)
+    func_outputs = redis_inst.lrange(out_key, 0, -1)
+    for func_input, func_output in zip(func_inputs, func_outputs):
+        print('{}(*{}) -> {}'.format(
+            func_name,
+            func_input.decode("utf-8"),
+            func_output,
+        ))
+
+
 class Cache:
     """class that functions as a cache through its methods"""
 

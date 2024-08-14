@@ -2,8 +2,20 @@
 """contains a class with a constructor and method"""
 
 import redis
-from typing import Union, Callable
+from typing import Union, Callable, Any
 import uuid
+from functools import wraps
+
+
+def count_calls(method: Callable) -> Callable:
+    """count the amount methods of Cache is called"""
+    @wraps(method)
+    def caller(self, *args, **kwargs) -> Any:
+        """call the method after incrementing it's counter in redis storage"""
+        if isinstance(self._redis, redis.Redis):
+            self._redis.incr(method.__qualname__)
+        return method(self, *args, **kwargs)
+    return caller
 
 
 class Cache:
@@ -14,6 +26,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb(True)
 
+    @count_calls
     def store(self, data: Union[int, float, str, bytes]) -> str:
         """
         generate a random key and store input data in Redis

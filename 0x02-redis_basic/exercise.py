@@ -7,8 +7,26 @@ import uuid
 from functools import wraps
 
 
+def call_history(method: Callable) -> Callable:
+    """store the history of inputs and utputs for a function"""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """call the method after storing its input then storing its output"""
+        input_list_key = "{}:inputs".format(method.__qualname__)
+        output_list_key = "{}:outputs".format(method.__qualname__)
+
+        if isinstance(self._redis, redis.Redis):
+            self._redis.rpush(input_list_key, str(args))
+
+        output = method(self, *args, **kwargs)
+        if isinstance(self._redis, redis.Redis):
+            self._redis.rpush(output_list_key, output)
+        return output
+    return wrapper
+
+
 def count_calls(method: Callable) -> Callable:
-    """count the amount methods of Cache is called"""
+    """count the amount method of Cache is called"""
     @wraps(method)
     def caller(self, *args, **kwargs) -> Any:
         """call the method after incrementing it's counter in redis storage"""
@@ -26,6 +44,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb(True)
 
+    @call_history
     @count_calls
     def store(self, data: Union[int, float, str, bytes]) -> str:
         """
